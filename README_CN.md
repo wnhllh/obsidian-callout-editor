@@ -15,7 +15,7 @@ Callout Editor是一款Obsidian编辑插件，它通过卡片的自由创建组�
 请参考: [How to install Obsidian Plugins](https://forum.obsidian.md/t/plugins-mini-faq/7737)
 
 1. 创建文件夹 `obsidian-callout-editor`
-2. 下载 main.js, manifest.json and styles.css
+2. 下载 `main.js, manifest.json, callout-custom.css, styles.css`
 3. 将下载文件放入文件夹
 4. 将文件夹放入 YourVault/.obsidian/plugins
 5. 重启Obsidian

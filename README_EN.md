@@ -16,7 +16,7 @@ Elevate your note-taking experience in Obsidian with the Callout Editor plugin. 
 Please Refer: [How to install Obsidian Plugins](https://forum.obsidian.md/t/plugins-mini-faq/7737)
 
 1. Create a folder `obsidian-callout-editor`
-2. Download main.js, manifest.json and styles.css
+2. Download `main.js, manifest.json, callout-custom.css, styles.css`
 3. Put the downloaded files into the folder
 4. Put the folder in YourVault/.obsidian/plugins
 5. Reload the plugins in Obsidian settings or restart Obsidian

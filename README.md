@@ -1,96 +1,45 @@
-# Obsidian Sample Plugin
+# Callout Editor for Obsidian
+[English](README_EN.md) | 中文
 
-This is a sample plugin for Obsidian (https://obsidian.md).
+Callout Editor是一款Obsidian编辑插件，它通过卡片的自由创建组织，所见即所得的编辑方式，实时色彩选择以及灵活的瀑布流布局，优化了Callout的实时编辑与呈现形式。
 
-This project uses Typescript to provide type checking and documentation.
-The repo depends on the latest plugin API (obsidian.d.ts) in Typescript Definition format, which contains TSDoc comments describing what it does.
+## 功能特点
 
-**Note:** The Obsidian API is still in early alpha and is subject to change at any time!
+- **所见即所得编辑**：在Obsidian中提供Callout的实时编辑功能，简化卡片的创建与修改过程。
+- **瀑布流布局**：支持一键创建不同列数的卡片布局，以清晰、有序的方式展示笔记内容。
+- **颜色选择器**：通过每个卡片右下角的颜色选择器，轻松为卡片添加色彩标记，增强信息分类的直观性。
+- **实时内容储存**：通过在当前卡片文本框外的任何地方点击，即可确保您的修改被立即且自动保存。
 
-This sample plugin demonstrates some of the basic functionality the plugin API can do.
-- Adds a ribbon icon, which shows a Notice when clicked.
-- Adds a command "Open Sample Modal" which opens a Modal.
-- Adds a plugin setting tab to the settings page.
-- Registers a global click event and output 'click' to the console.
-- Registers a global interval which logs 'setInterval' to the console.
+## 安装步骤
 
-## First time developing plugins?
+请参考: [How to install Obsidian Plugins](https://forum.obsidian.md/t/plugins-mini-faq/7737)
 
-Quick starting guide for new plugin devs:
+1. 创建文件夹 `obsidian-callout-editor`
+2. 下载 main.js, manifest.json and styles.css
+3. 将下载文件放入文件夹
+4. 将文件夹放入 YourVault/.obsidian/plugins
+5. 重启Obsidian
 
-- Check if [someone already developed a plugin for what you want](https://obsidian.md/plugins)! There might be an existing plugin similar enough that you can partner up with.
-- Make a copy of this repo as a template with the "Use this template" button (login to GitHub if you don't see it).
-- Clone your repo to a local development folder. For convenience, you can place this folder in your `.obsidian/plugins/your-plugin-name` folder.
-- Install NodeJS, then run `npm i` in the command line under your repo folder.
-- Run `npm run dev` to compile your plugin from `main.ts` to `main.js`.
-- Make changes to `main.ts` (or create new `.ts` files). Those changes should be automatically compiled into `main.js`.
-- Reload Obsidian to load the new version of your plugin.
-- Enable plugin in settings window.
-- For updates to the Obsidian API run `npm update` in the command line under your repo folder.
+## 使用指南
 
-## Releasing new releases
+### 插入瀑布流卡片簇
 
-- Update your `manifest.json` with your new version number, such as `1.0.1`, and the minimum Obsidian version required for your latest release.
-- Update your `versions.json` file with `"new-plugin-version": "minimum-obsidian-version"` so older versions of Obsidian can download an older version of your plugin that's compatible.
-- Create new GitHub release using your new version number as the "Tag version". Use the exact version number, don't include a prefix `v`. See here for an example: https://github.com/obsidianmd/obsidian-sample-plugin/releases
-- Upload the files `manifest.json`, `main.js`, `styles.css` as binary attachments. Note: The manifest.json file must be in two places, first the root path of your repository and also in the release.
-- Publish the release.
+- 使用`Ctrl/Cmd + P`呼出命令面板。
+- 搜索并选择`Callout Editor: insert two/three/four/five columns`，即可根据需要插入卡片簇。
 
-> You can simplify the version bump process by running `npm version patch`, `npm version minor` or `npm version major` after updating `minAppVersion` manually in `manifest.json`.
-> The command will bump version in `manifest.json` and `package.json`, and add the entry for the new version to `versions.json`
+### 快速调整颜色
 
-## Adding your plugin to the community plugin list
+- 将鼠标悬停在卡片的右下角以显示颜色选择器。
+- 选择适当的颜色，为卡片或文本进行视觉分类。
 
-- Check https://github.com/obsidianmd/obsidian-releases/blob/master/plugin-review.md
-- Publish an initial version.
-- Make sure you have a `README.md` file in the root of your repo.
-- Make a pull request at https://github.com/obsidianmd/obsidian-releases to add your plugin.
+### 添加新卡片
 
-## How to use
+- 点击卡片右侧的添加按钮，即可在当前卡片旁边新增卡片。
 
-- Clone this repo.
-- Make sure your NodeJS is at least v16 (`node --version`).
-- `npm i` or `yarn` to install dependencies.
-- `npm run dev` to start compilation in watch mode.
+### 保存更改
 
-## Manually installing the plugin
+- 在当前编辑区域外点击一下，即可自动保存所有更改。
 
-- Copy over `main.js`, `styles.css`, `manifest.json` to your vault `VaultFolder/.obsidian/plugins/your-plugin-id/`.
+## 开源贡献
 
-## Improve code quality with eslint (optional)
-- [ESLint](https://eslint.org/) is a tool that analyzes your code to quickly find problems. You can run ESLint against your plugin to find common bugs and ways to improve your code. 
-- To use eslint with this project, make sure to install eslint from terminal:
-  - `npm install -g eslint`
-- To use eslint to analyze this project use this command:
-  - `eslint main.ts`
-  - eslint will then create a report with suggestions for code improvement by file and line number.
-- If your source code is in a folder, such as `src`, you can use eslint with this command to analyze all files in that folder:
-  - `eslint .\src\`
-
-## Funding URL
-
-You can include funding URLs where people who use your plugin can financially support it.
-
-The simple way is to set the `fundingUrl` field to your link in your `manifest.json` file:
-
-```json
-{
-    "fundingUrl": "https://buymeacoffee.com"
-}
-```
-
-If you have multiple URLs, you can also do:
-
-```json
-{
-    "fundingUrl": {
-        "Buy Me a Coffee": "https://buymeacoffee.com",
-        "GitHub Sponsor": "https://github.com/sponsors",
-        "Patreon": "https://www.patreon.com/"
-    }
-}
-```
-
-## API Documentation
-
-See https://github.com/obsidianmd/obsidian-api
+欢迎任何形式的贡献，无论是功能建议、问题报告还是代码提交。请访问[GitHub仓库](https://github.com/wnhllh/obsidian-callout-editor)。

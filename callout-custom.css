@@ -4,7 +4,7 @@
 }
 
 .callout-content {
-	border-radius: 5px;
+	/* border-radius: 5px; */
 	padding-left: 15px;
 	padding-right: 15px;
 	padding-top: 0px;
@@ -12,7 +12,8 @@
 }
 
 .callout-title {
-	display: none;
+  padding-top: 10px;
+  padding-left: 10px;
 }
 
 body {
@@ -25,10 +26,26 @@ body {
 	--float-small-width: 300px;
 	--float-medium-width: 400px;
 	--float-large-width: 600px;
+
+    --col-orange: 178, 122, 64;
+    --col-pink: 178, 22, 164;
+    --col-green: 99, 188, 76;
+    --col-yellow: 255, 204, 0;
+    --col-blue: 0, 153, 255;
+    --col-purple: 139, 65, 166;
+    --col-red: 255, 106, 106;
+    --col-grey: 153, 153, 153;
+
+    --red: rgb(255, 236, 236);
+    --green: rgb(238, 243, 237);
+    --orange: rgb(249, 237, 223);
+    --yellow: rgb(250, 243, 222);
+    --blue: rgb(233, 243, 248);
+    --grey: rgb(241, 241, 239);
 }
 
 /* remove callout-title and make callout-content as part of main callout for box formatting */
-/* div[data-callout="multi-column"].callout > .callout-title { display: none; } */
+div[data-callout="multi-column"].callout > .callout-title { display: none; }
 
 /* ===隐藏标题============ */
 .callout.callout:is(
@@ -79,53 +96,231 @@ body {
 	border-radius: 12.5px;
 }
 
+.callout.callout:is([data-callout-metadata*='white'], [data-callout*='white'])
+	.callout-content {
+	border-left: 0;
+	background-color: rgb(250, 250, 250);
+  box-shadow: 0 2.5px 7.5px rgba(0, 0, 0, 0.15);
+	/* border: 1px solid rgba(0, 0, 0, 0.15); */
+  border-radius: 5px;
+}
+
+.callout.callout:is([data-callout-metadata*='white'], [data-callout*='white'])
+	.callout-title 
+  {
+  --callout-color: grey;
+  background-color: rgb(250, 250, 250);
+}
+
+
 .callout.callout:is([data-callout-metadata*='green'], [data-callout*='green'])
 	.callout-content {
 	border-left: 0;
-	background-color: rgba(163, 230, 53, 0.9);
-	box-shadow: 0 2.5px 7.5px rgba(0, 0, 0, 0.15);
-	border: 1px solid rgba(163, 230, 53, 0.9);
+	/* background-color: rgba(163, 230, 53, 0.9); */
+  background-color: var(--green);
+  /* box-shadow: 0 2.5px 7.5px rgba(0, 0, 0, 0.15); */
+	/* border: 1px solid rgba(163, 230, 53, 0.9); */
+}
+
+.callout.callout:is([data-callout-metadata*='green'], [data-callout*='green'])
+	.callout-title 
+  {
+  --callout-color: var(--col-green);
+  background-color: var(--green);
 }
 
 .callout.callout:is([data-callout-metadata*='orange'], [data-callout*='orange'])
 	.callout-content {
 	border-left: 0;
-	background-color: rgba(251, 146, 60, 0.9);
-	box-shadow: 0 2.5px 7.5px rgba(0, 0, 0, 0.15);
-	border: 1px solid rgba(251, 146, 60, 0.9);
+	/* background-color: rgba(251, 146, 60, 0.9); */
+  background-color: var(--orange);
+	/* box-shadow: 0 2.5px 7.5px rgba(0, 0, 0, 0.15); */
+	/* border: 1px solid rgba(251, 146, 60, 0.9); */
+}
+
+.callout.callout:is([data-callout-metadata*='orange'], [data-callout*='orange'])
+	.callout-title 
+  {
+  --callout-color: var(--col-orange);
+  background-color: var(--orange);
 }
 
 .callout.callout:is([data-callout-metadata*='yellow'], [data-callout*='yellow'])
 	.callout-content {
 	border-left: 0;
-	background-color: rgba(250, 204, 21, 0.9);
-	box-shadow: 0 2.5px 7.5px rgba(0, 0, 0, 0.15);
-	border: 1px solid rgba(250, 204, 21, 0.9);
+	/* background-color: rgba(250, 204, 21, 0.9); */
+  background-color: var(--yellow);
+  /* box-shadow: 0 2.5px 7.5px rgba(0, 0, 0, 0.15); */
+	/* border: 1px solid rgba(250, 204, 21, 0.9); */
+}
+
+.callout.callout:is([data-callout-metadata*='yellow'], [data-callout*='yellow'])
+	.callout-title 
+  {
+  --callout-color: var(--col-yellow);
+  background-color: var(--yellow);
 }
 
 .callout.callout:is([data-callout-metadata*='blue'], [data-callout*='blue'])
 	.callout-content {
 	border-left: 0;
-	background-color: rgba(96, 165, 250, 0.9);
-	box-shadow: 0 2.5px 7.5px rgba(0, 0, 0, 0.15);
-	border: 1px solid rgba(96, 165, 250, 0.9);
+	/* background-color: rgba(96, 165, 250, 0.9); */
+  background-color: var(--blue);
+  /* box-shadow: 0 2.5px 7.5px rgba(0, 0, 0, 0.15); */
+	/* border: 1px solid rgba(96, 165, 250, 0.9); */
+}
+
+.callout.callout:is([data-callout-metadata*='blue'], [data-callout*='blue'])
+	.callout-title 
+  {
+  --callout-color: var(--col-blue);
+  background-color: var(--blue);
 }
 
 .callout.callout:is([data-callout-metadata*='red'], [data-callout*='red'])
-	.callout-content {
+	.callout-content 
+  {
 	border-left: 0;
-	background-color: rgba(248, 113, 113, 0.9);
-	box-shadow: 0 2.5px 7.5px rgba(0, 0, 0, 0.15);
-	border: 1px solid rgba(248, 113, 113, 0.9);
+  background-color: var(--red);
 }
+
+.callout.callout:is([data-callout-metadata*='red'], [data-callout*='red'])
+	.callout-title 
+  {
+  --callout-color: var(--col-red);
+  background-color: var(--red);
+}
+
 
 .callout.callout:is([data-callout-metadata*='grey'], [data-callout*='grey'])
 	.callout-content {
 	border-left: 0;
-	background-color: rgb(250, 250, 250);
-	box-shadow: 0 2px 5px rgba(0, 0, 0, 0.15);
-	border: 1px solid rgb(245, 245, 245);
+	/* background-color: rgb(250, 250, 250); */
+  background-color: var(--grey);
+  /* box-shadow: 0 2px 5px rgba(0, 0, 0, 0.15); */
+	/* border: 1px solid rgb(245, 245, 245); */
 }
+
+.callout.callout:is([data-callout-metadata*='grey'], [data-callout*='grey'])
+	.callout-title 
+  {
+  --callout-color: var(--col-grey);
+  background-color: var(--grey);
+}
+
+/* =============== */
+
+.callout.callout:is([data-callout-metadata*='col-green'], [data-callout*='col-green'])
+	.callout-content {
+	border-left: 0;
+	/* background-color: rgba(163, 230, 53, 0.9); */
+	background-color: transparent;
+  /* box-shadow: 0 2.5px 7.5px rgba(0, 0, 0, 0.15); */
+	/* border: 1px solid rgba(163, 230, 53, 0.9); */
+	border: 1px solid transparent;
+}
+
+.callout.callout:is([data-callout-metadata*='col-green'], [data-callout*='col-green'])
+	.callout-title 
+  {
+  --callout-color: var(--col-green);
+  background-color: #EDF3EC;
+  padding-top: 7px;
+  padding-bottom: 7px;
+}
+
+.callout.callout:is([data-callout-metadata*='col-orange'], [data-callout*='col-orange'])
+	.callout-content {
+	border-left: 0;
+	/* background-color: rgba(251, 146, 60, 0.9); */
+  background-color: transparent;
+	/* box-shadow: 0 2.5px 7.5px rgba(0, 0, 0, 0.15); */
+	/* border: 1px solid rgba(251, 146, 60, 0.9); */
+	border: transparent;
+}
+
+.callout.callout:is([data-callout-metadata*='col-orange'], [data-callout*='col-orange'])
+	.callout-title 
+  {
+  --callout-color: var(--col-orange);
+  background-color: #FAEBDD;
+  padding-top: 7px;
+  padding-bottom: 7px;
+}
+
+.callout.callout:is([data-callout-metadata*='col-yellow'], [data-callout*='col-yellow'])
+	.callout-content {
+	border-left: 0;
+	/* background-color: rgba(250, 204, 21, 0.9); */
+	background-color: transparent;
+  /* box-shadow: 0 2.5px 7.5px rgba(0, 0, 0, 0.15); */
+	/* border: 1px solid rgba(250, 204, 21, 0.9); */
+	border: 1px solid transparent;
+}
+
+.callout.callout:is([data-callout-metadata*='col-yellow'], [data-callout*='col-yellow'])
+	.callout-title 
+  {
+  --callout-color: var(--col-yellow);
+  background-color: #FBF3DB;
+  padding-top: 7px;
+  padding-bottom: 7px;
+}
+
+.callout.callout:is([data-callout-metadata*='col-blue'], [data-callout*='col-blue'])
+	.callout-content {
+	border-left: 0;
+	/* background-color: rgba(96, 165, 250, 0.9); */
+	background-color: transparent;
+  /* box-shadow: 0 2.5px 7.5px rgba(0, 0, 0, 0.15); */
+	/* border: 1px solid rgba(96, 165, 250, 0.9); */
+  border: 1px solid transparent;
+}
+
+.callout.callout:is([data-callout-metadata*='col-blue'], [data-callout*='col-blue'])
+	.callout-title 
+  {
+  --callout-color: var(--col-blue);
+  background-color: #E7F3F8;
+  padding-top: 7px;
+  padding-bottom: 7px;
+}
+
+.callout.callout:is([data-callout-metadata*='col-red'], [data-callout*='col-red'])
+	.callout-content 
+  {
+	border-left: 0;
+	background-color: transparent;
+}
+
+.callout.callout:is([data-callout-metadata*='col-red'], [data-callout*='col-red'])
+	.callout-title 
+  {
+  --callout-color: var(--col-red);
+  background-color: #FDEBEC;
+  padding-top: 7px;
+  padding-bottom: 7px;
+}
+
+
+.callout.callout:is([data-callout-metadata*='col-grey'], [data-callout*='col-grey'])
+	.callout-content {
+	border-left: 0;
+	/* background-color: rgb(250, 250, 250); */
+	background-color: transparent;
+  /* box-shadow: 0 2px 5px rgba(0, 0, 0, 0.15); */
+	/* border: 1px solid rgb(245, 245, 245); */
+}
+
+.callout.callout:is([data-callout-metadata*='col-grey'], [data-callout*='col-grey'])
+	.callout-title 
+  {
+  --callout-color: var(--col-grey);
+  background-color: #F1F1EF;
+  padding-top: 7px;
+  padding-bottom: 7px;
+}
+
 
 /* ===支持 right left  center 语法============ */
 /*支持两种写法

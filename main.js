@@ -165,16 +165,190 @@ function HTMLtoList0(rawContent) {
 	return contentTemp
 }
 
+function HTMLtoList2(rawContent) {
+	console.log('raw', rawContent)
+	function processContent(item) {
+		// 解析为DOM结构
+		const doc = new DOMParser().parseFromString(
+			`<div>${item}</div>`,
+			'text/html'
+		)
+
+		const processNode = (node) => {
+			if (node.nodeType === Node.ELEMENT_NODE) {
+				let content = ''
+				if (
+					node.tagName === 'DIV' &&
+					node.hasAttribute('data-callout-metadata')
+				) {
+					// 直接返回 [PLACEABLE] 替代符，或者根据需要处理Note的内容
+					return '[PLACEABLE]'
+				}
+				switch (node.tagName) {
+					case 'IMG':
+						const src = node.getAttribute('src')
+						content = `![](${src})`
+						break
+					case 'A':
+						const href = node.getAttribute('href')
+						content = `[${node.textContent}](${href})`
+						break
+					case 'STRONG':
+						content = `**${processNode(node.firstChild)}**`
+						break
+					case 'EM':
+						content = `*${processNode(node.firstChild)}*`
+						break
+					case 'DEL':
+						content = `~~${processNode(node.firstChild)}~~`
+						break
+					case 'BR':
+						return '\n'
+					// 其他标签处理，如UL, LI等，或直接遍历子节点
+					case 'UL':
+					case 'OL':
+						Array.from(node.childNodes).forEach((child) => {
+							content += processNode(child, true, node.tagName)
+						})
+						break
+					case 'LI':
+						const prefix = listType === 'OL' ? '1. ' : '- '
+						const checkbox = node.getAttribute('data-checked')
+						if (checkbox !== null) {
+							const checked = checkbox === 'true' ? '[x]' : '[ ]'
+							content = `- ${checked} `
+						} else {
+							content = `${prefix}`
+						}
+						Array.from(node.childNodes).forEach((child) => {
+							content += processNode(child)
+						})
+						if (!isListItem) content += '\n'
+						break
+					default:
+						Array.from(node.childNodes).forEach((child) => {
+							content += processNode(child)
+						})
+				}
+				return content
+			} else if (node.nodeType === Node.TEXT_NODE) {
+				return node.textContent
+			}
+			return ''
+		}
+
+		// 将所有内容聚合为单个字符串，然后基于换行符分割
+		const fullContent = processNode(doc.body.firstChild).trim()
+		const processedNodes = fullContent
+			.split('\n')
+			.filter((line) => line.trim() !== '')
+
+		return processedNodes
+	}
+
+	function processContentOptimized(htmlSegments) {
+		// 将所有HTML片段合并为一个字符串
+		const fullHtml = htmlSegments.join('')
+
+		let filteredHtml = fullHtml.replace(
+			/<div style="[^"]*"[^>]*>[\s\S]*?<\/div>/g,
+			''
+		)
+
+		// 针对<div data-callout-metadata>元素及其全部内容的替换逻辑
+		let processedHtml = filteredHtml
+			.replace(
+				/<div data-callout-metadata="[^"]*"[^>]*>([\s\S]*?)<\/div><\/div>/g,
+				'\n[PLACEABLE]\n'
+			)
+			.replace(/<img src="([^"]+)"[^>]*>/g, '![]($1)')
+			.replace(/<strong>(.*?)<\/strong>/g, '**$1**')
+			.replace(/<em>(.*?)<\/em>/g, '*$1*')
+			.replace(/<del>(.*?)<\/del>/g, '~~$1~~')
+			.replace(
+				/<ul class="contains-task-list">([\s\S]*?)<\/ul>/g,
+				(match, listItems) => {
+					// 未选中的任务列表项
+					let uncheckedItems = listItems
+						.replace(
+							/<li data-task="" class="task-list-item"><input[^>]*>(.*?)<\/li>/g,
+							'- [ ] $1\n'
+						)
+						.trim()
+					// 选中的任务列表项
+					let checkedItems = uncheckedItems
+						.replace(
+							/<li data-task="x" class="task-list-item is-checked"><input[^>]*checked=""[^>]*>(.*?)<\/li>/g,
+							'- [x] $1\n'
+						)
+						.trim()
+					return `\n${checkedItems}\n`
+				}
+			)
+
+			// 新增：处理无序列表
+			.replace(/<ul>([\s\S]*?)<\/ul>/g, (match, listItems) => {
+				return listItems.replace(/<li>(.*?)<\/li>/g, '- $1\n').trim()
+			})
+			// 新增：处理有序列表
+			.replace(/<ol>([\s\S]*?)<\/ol>/g, (match, listItems) => {
+				let counter = 1
+				return listItems
+					.replace(/<li>(.*?)<\/li>/g, () => `${counter++}. $1\n`)
+					.trim()
+			})
+
+			.replace(/<br\s*\/?>/g, '\n')
+			.replace(/<[^>]+>/g, '')
+
+		// 根据换行符分割处理后的内容
+		const processedNodes = processedHtml
+			.split('\n')
+			.filter((line) => line.trim() !== '')
+
+		return processedNodes
+	}
+
+	// 处理 rawContent 中的每一项
+	// const processedContent = rawContent.flatMap((item) => processContent(item))
+	//     .filter(item => item.trim() !== ''); // 过滤掉空白项
+
+	const processedContent = processContentOptimized(rawContent)
+
+	console.log('process', processedContent)
+	// 根据 Note 进行分组
+	const groupedContent = []
+	let currentGroup = []
+	processedContent.forEach((item) => {
+		if (item === '[PLACEABLE]') {
+			if (currentGroup.length > 0) {
+				groupedContent.push(currentGroup)
+				currentGroup = []
+			}
+		} else {
+			currentGroup.push(item)
+		}
+	})
+	// 将最后一个分组加入到结果中
+	if (currentGroup.length > 0) {
+		groupedContent.push(currentGroup)
+	}
+
+	// console.log("1", groupedContent);
+	return groupedContent
+}
+
 function HTMLtoList(rawContent) {
+	// console.log('rawContent', rawContent)
 	const newList = []
 	let contentTemp = []
 
 	// 首先，移除所有以 <button 开头的项
 	rawContent = rawContent.filter((item) => !item.trim().startsWith('<button'))
 
-	// 然后，找到并移除第一个以 <div data-callout-metadata= 开头的项
+	// 然后，找到并移除第一个以 <div data-callout-metadata 开头的项
 	const divIndex = rawContent.findIndex((item) =>
-		item.trim().startsWith('<div data-callout-metadata=')
+		item.trim().startsWith('<div data-callout-metadata')
 	)
 	if (divIndex !== -1) {
 		rawContent.splice(divIndex, 1)
@@ -204,25 +378,26 @@ function HTMLtoList(rawContent) {
 			}
 			if (!rawContent[i].endsWith('<br>')) {
 				if (
-					rawContent[i].contains('<br>')
+					rawContent[i].contains('<br')
 					//&& !!rawContent[i].contains('span>')
 				) {
-					let temp = rawContent[i].split('<br>')
+					let temp = rawContent[i].split(/<br\s*\/?>|<br.*?>/gi)
 					let style = ''
 					for (let j = 0; j < temp.length; j++) {
 						if (temp[j].contains('span')) {
-							if (temp[j].startsWith('<span') && !temp[j].endsWith('</span>')) {
-								style = temp[j]
-									.match(/style=\"(.*?)\"/)[0]
-									.replace(/style=\"(.*?)\"/, '$1')
-								temp[j] = temp[j] + '</span>'
-							}
-							if (temp[j].startsWith('</span>')) {
-								temp[j] = temp[j].replace('</span>', '')
-							}
-							if (temp[j].contains('</span>') && !temp[j].startsWith('<span')) {
-								temp[j] = '<span style="' + style + '">' + temp[j]
-							}
+							// if (temp[j].startsWith('<span') && !temp[j].endsWith('</span>')) {
+							// 	style = temp[j]
+							// 		.match(/style=\"(.*?)\"/)[0]
+							// 		.replace(/style=\"(.*?)\"/, '$1')
+							// 	temp[j] = temp[j] + '</span>'
+							// }
+							// if (temp[j].startsWith('</span>')) {
+							// 	temp[j] = temp[j].replace('</span>', '')
+							// }
+							// if (temp[j].contains('</span>') && !temp[j].startsWith('<span')) {
+							// 	temp[j] = '<span style="' + style + '">' + temp[j]
+							// }
+							temp[j] = temp[j].replace(/<span[^>]*>(.*?)<\/span>/gi, '$1')
 						}
 						contentTemp.push(temp[j])
 					}
@@ -243,23 +418,24 @@ function HTMLtoList(rawContent) {
 					rawContent[i].match(/\"(.*?)\"/)[0].replace(/\"(.*?)\"/, '$1') +
 					')'
 			}
-			if (rawContent[i].contains('<br>')) {
-				let temp = rawContent[i].split('<br>')
+			if (rawContent[i].contains('<br')) {
+				let temp = rawContent[i].split(/<br\s*\/?>|<br.*?>/gi)
 				let style = ''
 				for (let j = 0; j < temp.length; j++) {
 					if (temp[j].contains('span')) {
-						if (temp[j].startsWith('<span') && !temp[j].endsWith('</span>')) {
-							style = temp[j]
-								.match(/style=\"(.*?)\"/)[0]
-								.replace(/style=\"(.*?)\"/, '$1')
-							temp[j] = temp[j] + '</span>'
-						}
-						if (temp[j].startsWith('</span>')) {
-							temp[j] = temp[j].replace('</span>', '')
-						}
-						if (temp[j].contains('</span>') && !temp[j].startsWith('<span')) {
-							temp[j] = '<span style="' + style + '">' + temp[j]
-						}
+						// if (temp[j].startsWith('<span') && !temp[j].endsWith('</span>')) {
+						// 	style = temp[j]
+						// 		.match(/style=\"(.*?)\"/)[0]
+						// 		.replace(/style=\"(.*?)\"/, '$1')
+						// 	temp[j] = temp[j] + '</span>'
+						// }
+						// if (temp[j].startsWith('</span>')) {
+						// 	temp[j] = temp[j].replace('</span>', '')
+						// }
+						// if (temp[j].contains('</span>') && !temp[j].startsWith('<span')) {
+						// 	temp[j] = '<span style="' + style + '">' + temp[j]
+						// }
+						temp[j] = temp[j].replace(/<span[^>]*>(.*?)<\/span>/gi, '$1')
 					}
 					contentTemp.push(temp[j])
 				}
@@ -293,9 +469,15 @@ function HTMLtoList(rawContent) {
 				rawContent[i].match(/\>(.*?)\</)[0].replace(/\>(.*?)\</, '$1')
 			contentTemp.push(rawContent[i])
 		}
+		if (rawContent[i].startsWith('<h6')) {
+			rawContent[i] =
+				'###### ' +
+				rawContent[i].match(/\>(.*?)\</)[0].replace(/\>(.*?)\</, '$1')
+			contentTemp.push(rawContent[i])
+		}
 		if (
 			rawContent[i].startsWith('</div></div>') ||
-			rawContent[i].startsWith('<div data-callout-metadata=') ||
+			rawContent[i].startsWith('<div data-callout-metadata') ||
 			i == rawContent.length - 1
 		) {
 			// vacantList.push(0)
@@ -313,6 +495,7 @@ function HTMLtoList(rawContent) {
 			contentTemp = []
 		}
 	}
+	console.log('newList', newList)
 	return newList
 }
 
@@ -509,6 +692,29 @@ var CalloutEditor = class {
 		})
 	}
 
+	async updateChecklistItem(id, line, isChecked) {
+		console.log('updateChecklistItem', id, line, isChecked)
+
+		const markdownView = this.plugin.app.workspace.getActiveViewOfType(
+			import_obsidian.MarkdownView
+		)
+		const editor = markdownView == null ? void 0 : markdownView.editor
+		const editorView = editor == null ? void 0 : editor.cm
+		if (!editor || !editorView) {
+			console.error('Cannot get editor')
+			return
+		}
+
+		const currentLineContent = editor.getLine(line)
+		const newLineContent = isChecked
+			? currentLineContent.replace('[ ]', '[x]')
+			: currentLineContent.replace('[x]', '[ ]')
+
+		withoutScrollAndFocus(editorView, () => {
+			editorView.dispatch(setLineWithoutScroll(editor, line, newLineContent))
+		})
+	}
+
 	async updateCalloutTitle(id, index, newTitle) {
 		const markdownView = this.plugin.app.workspace.getActiveViewOfType(
 			import_obsidian.MarkdownView
@@ -633,7 +839,8 @@ var CalloutEditor = class {
 			}
 		}
 
-		const newList = HTMLtoList(rawContent)
+		const newList = HTMLtoList2(rawContent)
+		console.log('sasa', newList)
 
 		// replace callout with new content
 		var k = 0
@@ -703,27 +910,71 @@ var getCalloutEditorExt = (
 	plugin,
 	updateTitleCallback,
 	addContentCallback,
+	updateChecklistCallback,
 	settings
 ) =>
 	import_view.ViewPlugin.fromClass(
 		class {
-			constructor() {
+			constructor(view) {
 				this.settings = settings
+				this.listenerMap = new WeakMap()
+
+				this.setupEventListeners(view)
 			}
-			destroy() {}
+			destroy(view) {
+				// this.removeEventListeners(view)
+			}
 			update(update) {
 				if (plugin.isInReadingView()) return
 				const dom = update.view.contentDOM
-				const calloutEls = dom.querySelectorAll(
-					'.callout' && "div[data-callout='note']" // && "div[data-callout='note-notitle-blue']"
-				)
 
-				// set attributes for calloutEls where data-callout = "multi-column"
+				this.removeEventListeners(update.view)
+				this.setupEventListeners(update.view)
+
+				function generateCalloutSelector() {
+					const baseKeywords = [
+						'note',
+						'tip',
+						'abstract',
+						'info',
+						'todo',
+						'success',
+						'question',
+						'warning',
+						'failure',
+						'danger',
+						'bug',
+						'example',
+						'quote'
+					]
+
+					// 生成每个基础关键词及其"-"后缀形式的选择器
+					const selectors = baseKeywords.flatMap((keyword) => [
+						`.callout[data-callout='${keyword}']`,
+						`.callout[data-callout^='${keyword}-']` // 使用 ^= 选择器匹配以 keyword- 开头的属性值
+					])
+
+					// 将所有选择器连接成一个字符串，用逗号分隔
+					return selectors.join(', ')
+				}
+
+				const selector = generateCalloutSelector()
+				const calloutEls = dom.querySelectorAll(selector)
 				const columnsEls = dom.querySelectorAll(
 					'.callout' && "div[data-callout='multi-column']"
 				)
 
 				calloutEls.forEach((calloutEl) => {
+					// 检查当前 calloutEl 是否为 columnsEls 内的任何一个元素的后代
+					const isInsideColumn = Array.from(columnsEls).some((columnEl) =>
+						columnEl.contains(calloutEl)
+					)
+
+					// 如果 calloutEl 在 columnEl 内部，则不执行后续逻辑
+					if (isInsideColumn) {
+						return
+					}
+
 					const calloutPos = update.view.posAtDOM(calloutEl)
 					const calloutLine = update.state.doc.lineAt(calloutPos).number - 1
 					const calloutId = `callout_${calloutLine}`
@@ -745,235 +996,276 @@ var getCalloutEditorExt = (
 					})
 				})
 
+				this.setupEventListeners(update.view)
+			}
+
+			setupEventListeners(view) {
+				const columnsEls = view.contentDOM.querySelectorAll(
+					'.callout' && "div[data-callout='multi-column']"
+				)
+
 				columnsEls.forEach((columnEl) => {
-					const columnPos = update.view.posAtDOM(columnEl)
-					const columnLine = update.state.doc.lineAt(columnPos).number - 1
+					const columnPos = view.posAtDOM(columnEl)
+					const columnLine = view.state.doc.lineAt(columnPos).number - 1
 					const columnId = `column_${columnLine}`
+
+					// 设置元素ID和其他属性
 					columnEl.id = columnId
 					columnEl.childNodes.forEach((child) => {
 						child.setAttribute('contenteditable', 'true')
 					})
 
+					this.setupColumnEl(columnEl, view)
+
 					const columnContent = columnEl.querySelector('.callout-content')
 
-					columnContent.addEventListener('click', (e) => {
-						numCols = []
-						var numCol = []
-						e.preventDefault()
-						e.stopPropagation()
-						columnEl.addClass(onEditingMulti)
-						// console.log(getCaretPosition(columnContent));
-						numLines = columnContent.innerText.split('\n').length
-						// const rawContent2 = columnContent.innerHTML.split('\n')
-						// numLines = HTMLtoList(rawContent2).length;
-						const cards = columnContent.innerText.split('\n')
-						for (let i = 0; i < cards.length; i++) {
-							if (cards[i].startsWith('Note')) {
-								cards.splice(i, 2)
-							}
-						}
-						for (let i = 0; i < cards.length; i++) {
-							if (cards[i] != '') {
-								numCol.push(cards[i])
+					// 如果存在旧的事件处理函数，则移除它
+					if (this.listenerMap.has(columnContent)) {
+						const oldHandler = this.listenerMap.get(columnContent)
+						columnContent.removeEventListener('click', oldHandler)
+					}
+
+					// 创建新的事件处理函数，它可以访问到columnId
+					const newHandler = ((columnId) => {
+						return (e) => {
+							const target = e.target
+
+							numCols = []
+							var numCol = []
+							e.preventDefault()
+							e.stopPropagation()
+
+							if (
+								target.matches('input[type="checkbox"].task-list-item-checkbox')
+							) {
+								// 在这里调用处理复选框点击的逻辑
+								console.log('Checklist item clicked in', columnContent)
+								const dataLine = target.getAttribute('data-line')
+								let lineNumber = parseInt(dataLine, 10)
+								const isChecked = target.checked
+								lineNumber = lineNumber + columnLine
+								console.log('lineNumber', lineNumber)
+								updateChecklistCallback(columnId, lineNumber, isChecked)
 							} else {
-								numCols.push(numCol)
-								numCol = []
+								columnEl.addClass(onEditingMulti)
+								// console.log(getCaretPosition(columnContent));
+								numLines = columnContent.innerText.split('\n').length
+								// const rawContent2 = columnContent.innerHTML.split('\n')
+								// numLines = HTMLtoList(rawContent2).length;
+								const cards = columnContent.innerText.split('\n')
+								for (let i = 0; i < cards.length; i++) {
+									if (cards[i].startsWith('Note')) {
+										cards.splice(i, 2)
+									}
+								}
+								for (let i = 0; i < cards.length; i++) {
+									if (cards[i] != '') {
+										numCol.push(cards[i])
+									} else {
+										numCols.push(numCol)
+										numCol = []
+									}
+									if (i == cards.length - 1) {
+										numCols.push(numCol)
+									}
+								}
+
+								let rawContent = columnContent.innerHTML.split('\n')
+								rawContent = rawContent.filter(
+									(line) => !line.trim().startsWith('<div style=')
+								)
+
+								contentList = HTMLtoList2(rawContent)
 							}
-							if (i == cards.length - 1) {
-								numCols.push(numCol)
-							}
 						}
+					})(columnId)
 
-						const rawContent = columnContent.innerHTML.split('\n')
-						contentList = HTMLtoList(rawContent)
+					// 为columnContent添加新的事件监听器，并存储引用
+					columnContent.addEventListener('click', newHandler)
+					this.listenerMap.set(columnContent, newHandler)
+				})
+			}
 
-						// console.log('column clicked: ', numLines)
-					})
+			removeEventListeners(view) {
+				const contentDOM = view.contentDOM
+				if (this.handleCheckboxClick) {
+					contentDOM.removeEventListener('click', this.handleCheckboxClick)
+				}
+			}
 
-					// const subColumn = columnContent.querySelectorAll(".callout");
-					// subColumn.forEach((subColumnEl) => {
-					//   console.log(subColumnEl);
-					// });
+			setupColumnEl(columnEl, view) {
+				const columnPos = view.posAtDOM(columnEl)
+				const columnLine = view.state.doc.lineAt(columnPos).number - 1
+				const columnId = `column_${columnLine}`
 
-					const colors = [
-						'transparent',
-						'red',
-						'orange',
-						'yellow',
-						'blue',
-						'green'
-					]
-					const calloutContents = columnEl.querySelectorAll(
-						'.callout-content .callout-content'
-					)
+				// 设置元素ID和其他属性
+				columnEl.id = columnId
+				columnEl.childNodes.forEach((child) => {
+					child.setAttribute('contenteditable', 'true')
+				})
 
-					calloutContents.forEach((content, index) => {
-						if (this.settings.enableAddButton) {
-							const addButton = document.createElement('div')
-							addButton.innerHTML = `<svg t="1711969391120" class="icon" viewBox="0 0 1024 1024" version="1.1" xmlns="http://www.w3.org/2000/svg" p-id="13056" width="12" height="20"><path d="M276.755 942.936c28.497 29.315 74.739 29.315 103.307 0l367.236-378.011c28.483-29.367 28.483-76.982 0-106.291l-367.236-377.997c-28.562-29.367-74.806-29.367-103.307 0-28.546 29.325-28.546 76.929 0 106.304l315.6 324.841-315.599 324.803c-28.545 29.367-28.544 76.973 0 106.356l0 0z" fill="#bfbfbf" p-id="13057"></path></svg>`
-							addButton.style.position = 'absolute'
-							addButton.style.right = '5.5px'
-							addButton.style.top = '50%' // Set top to 50% of parent's height
-							addButton.style.transform = 'translateY(-50%)' // Translate up by half of its height
-							content.style.position = 'relative'
-							content.appendChild(addButton)
+				const colors = [
+					'transparent',
+					'red',
+					'orange',
+					'yellow',
+					'blue',
+					'green',
+					'white'
+				]
+				const calloutContents = columnEl.querySelectorAll(
+					'.callout-content .callout-content'
+				)
 
-							let isClickAllowed = true // 初始时允许点击
+				calloutContents.forEach((content, index) => {
+					if (this.settings.enableAddButton) {
+						const addButton = document.createElement('div')
+						addButton.innerHTML = `<svg t="1711969391120" class="icon" viewBox="0 0 1024 1024" version="1.1" xmlns="http://www.w3.org/2000/svg" p-id="13056" width="12" height="20"><path d="M276.755 942.936c28.497 29.315 74.739 29.315 103.307 0l367.236-378.011c28.483-29.367 28.483-76.982 0-106.291l-367.236-377.997c-28.562-29.367-74.806-29.367-103.307 0-28.546 29.325-28.546 76.929 0 106.304l315.6 324.841-315.599 324.803c-28.545 29.367-28.544 76.973 0 106.356l0 0z" fill="#bfbfbf" p-id="13057"></path></svg>`
+						addButton.style.position = 'absolute'
+						addButton.style.right = '5.5px'
+						addButton.style.top = '50%' // Set top to 50% of parent's height
+						addButton.style.transform = 'translateY(-50%)' // Translate up by half of its height
+						content.style.position = 'relative'
+						content.appendChild(addButton)
 
-							addButton.addEventListener('click', (e) => {
-								if (!isClickAllowed) return // 如果当前不允许点击，则直接返回
+						let isClickAllowed = true // 初始时允许点击
 
-								// console.log(`Add button clicked in content ${index}`)
-								addContentCallback(columnId, index)
-								isClickAllowed = false // 禁用进一步的点击
-								setTimeout(() => {
-									isClickAllowed = true // 经过一定时间后重新允许点击
-								}, 2000)
-							})
+						addButton.addEventListener('click', (e) => {
+							if (!isClickAllowed) return // 如果当前不允许点击，则直接返回
 
-							// 设置按钮的初始透明度
-							addButton.style.opacity = '0'
-							// 设置过渡效果为平滑过渡
-							addButton.style.transition = 'opacity 0.3s'
-
-							content.addEventListener('mousemove', (e) => {
-								// 获取父容器的边界
-								const rect = content.getBoundingClientRect()
-								// 计算鼠标指针相对于父容器的X位置
-								const mouseX = e.clientX - rect.left
-
-								// 检查鼠标指针是否在父容器右侧10px内
-								if (rect.width - mouseX <= 50) {
-									// 如果是，则显示按钮
-									addButton.style.opacity = '1'
-								} else {
-									// 如果不是，则隐藏按钮
-									addButton.style.opacity = '0'
-								}
-							})
-						}
-
-						if (this.settings.enableSvgButton) {
-							const svgButton = document.createElement('div')
-							svgButton.innerHTML = `<svg t="1711969204609" class="icon" viewBox="0 0 1137 1024" version="1.1" xmlns="http://www.w3.org/2000/svg" p-id="6546" width="17" height="17"><path d="M14.222222 512C14.222222 185.002667 321.251556 9.671111 658.944 47.104c271.473778 30.151111 464.611556 214.129778 464.611556 440.661333 0 120.035556-60.586667 172.828444-180.110223 205.198223-8.135111 2.218667-15.815111 4.152889-30.776889 7.964444-51.939556 13.368889-72.590222 22.243556-81.294222 34.702222-10.865778 15.530667-11.719111 26.567111-6.428444 60.814222 1.877333 12.174222 2.616889 17.464889 3.356444 24.803556 6.030222 63.374222-20.081778 111.160889-96.028444 154.453333-87.438222 49.948444-265.557333 24.120889-421.034667-55.523555C130.844444 827.847111 14.222222 683.463111 14.222222 512zM649.500444 131.982222C356.181333 99.328 99.555556 245.930667 99.555556 512c0 134.257778 95.971556 253.041778 250.538666 332.231111 132.494222 67.868444 283.249778 89.713778 339.854222 57.400889 47.445333-27.079111 56.149333-43.064889 53.361778-72.305778a322.56 322.56 0 0 0-2.673778-19.911111c-8.419556-54.158222-6.144-84.195556 20.878223-122.766222 25.031111-35.84 57.116444-49.607111 129.877333-68.323556 15.075556-3.868444 22.186667-5.688889 29.752889-7.736889 86.641778-23.438222 117.077333-49.948444 117.077333-122.88 0-179.768889-157.866667-330.126222-388.721778-355.783111zM241.777778 430.762667a71.111111 71.111111 0 1 1 0 142.222222 71.111111 71.111111 0 0 1 0-142.222222z m455.111111-170.666667a71.111111 71.111111 0 1 1 0 142.222222 71.111111 71.111111 0 0 1 0-142.222222z m-284.444445-4.096a71.111111 71.111111 0 1 1 0 142.222222 71.111111 71.111111 0 0 1 0-142.222222z" fill="#bfbfbf" p-id="6547"></path></svg>`
-							svgButton.style.position = 'absolute'
-							svgButton.style.right = '4px'
-							svgButton.style.bottom = '0'
-							content.style.position = 'relative'
-							content.appendChild(svgButton)
-
-							// const circleButton = document.createElement('div');
-							// circleButton.classList.add('circle-button');
-							// circleButton.style.position = 'absolute';
-							// circleButton.style.right = '6px';
-							// circleButton.style.bottom = '6px';
-							// circleButton.style.height = '17.5px'; // 按钮直径
-							// circleButton.style.width = '17.5px';
-							// circleButton.style.borderRadius = '50%'; // 边框半径设为50%产生圆形效果
-							// circleButton.style.border = '2px solid white'; // 白色边框
-							// circleButton.style.display = 'flex';
-							// circleButton.style.alignItems = 'center';
-							// circleButton.style.justifyContent = 'center';
-							// circleButton.style.backgroundColor = 'transparent'; // 透明背景
-
-							// content.style.position = 'relative';
-							// content.appendChild(circleButton); // 将圆形按钮添加到内容中
-
-							// 设置按钮的初始透明度
-							svgButton.style.opacity = '0'
-							// 设置过渡效果为平滑过渡
-							svgButton.style.transition = 'opacity 0.3s'
-
-							content.addEventListener('mousemove', (e) => {
-								// 获取父容器的边界
-								const rect = content.getBoundingClientRect()
-								// 计算鼠标指针相对于父容器的X位置
-								const mouseX = e.clientX - rect.left
-
-								// 检查鼠标指针是否在父容器右侧10px内
-								if (rect.width - mouseX <= 50) {
-									// 如果是，则显示按钮
-									svgButton.style.opacity = '1'
-								} else {
-									// 如果不是，则隐藏按钮
-									svgButton.style.opacity = '0'
-								}
-							})
-
-							// 鼠标离开父容器时隐藏按钮
-							content.addEventListener('mouseleave', () => {
-								svgButton.style.opacity = '0'
-							})
-
-							// Create the color menu but don't append it yet
-							const colorMenu = createColorMenu(colors, (selectedColor) => {
-								// console.log('Selected color:', selectedColor)
-								updateTitleCallback(columnId, index, selectedColor)
-							})
-
-							// Append and show/hide the menu on SVG icon click
-							svgButton.addEventListener('click', (e) => {
-								e.stopPropagation()
-								if (!colorMenu.isConnected) {
-									// If the menu isn't already in the DOM
-									content.appendChild(colorMenu) // Append the menu
-									colorMenu.style.display = 'block' // Make sure it's visible
-								} else {
-									colorMenu.style.display =
-										colorMenu.style.display === 'none' ? 'block' : 'none' // Toggle display
-								}
-							})
-
-							content.appendChild(colorMenu) // Initially add to DOM but hide
-							colorMenu.style.display = 'none' // Start hidden
-						}
-					})
-
-					function createColorMenu(colors, onSelect) {
-						const menu = document.createElement('div')
-						menu.style.position = 'absolute'
-						menu.style.right = '22.5px'
-						menu.style.bottom = '2.5px'
-						menu.style.backgroundColor = '#fff'
-						menu.style.border = '1px solid #ccc'
-						menu.style.paddingTop = '2.5px'
-						menu.style.paddingBottom = '2.5px'
-
-						menu.style.zIndex = '1000'
-						menu.style.borderRadius = '10px'
-
-						menu.style.transform = 'scale(0.65)' // Scale down to 80% of the original size
-						menu.style.transformOrigin = 'bottom right'
-						// Explicitly setting the container width; adjust as necessary.
-						menu.style.width = '250px' // Set a fixed width for the menu
-						menu.style.overflowX = 'auto' // Allow horizontal scrolling
-						menu.style.overflowY = 'hidden' // Prevent vertical scrolling
-						menu.style.whiteSpace = 'nowrap' // Keep items in a single line
-						menu.style.display = 'block' // Use block layout with nowrap to enforce horizontal layout
-
-						colors.forEach((color) => {
-							const colorOption = document.createElement('div')
-							colorOption.textContent = '11' // Display the color value or adjust as needed
-
-							colorOption.style.backgroundColor = color
-							colorOption.style.color = color // Ensuring text is readable
-							colorOption.style.fontSize = '15px'
-							colorOption.style.display = 'inline-block' // Inline-block for horizontal alignment
-							colorOption.style.padding = '0px 10px'
-							colorOption.style.borderRadius = '10px'
-							// colorOption.style.width = '15px'; // Optional: Adjust the width as needed
-							// colorOption.style.height = '15px'; // Optional: Adjust the width as needed
-
-							colorOption.style.margin = '2.5px' // Adds space between color options
-							colorOption.style.height = '30px' // Optional: Adjust the height as needed
-							colorOption.style.boxSizing = 'border-box' // Include padding and border in the element's total width and height
-							colorOption.addEventListener('click', () => onSelect(color))
-							menu.appendChild(colorOption)
+							// console.log(`Add button clicked in content ${index}`)
+							addContentCallback(columnId, index)
+							isClickAllowed = false // 禁用进一步的点击
+							setTimeout(() => {
+								isClickAllowed = true // 经过一定时间后重新允许点击
+							}, 2000)
 						})
 
-						return menu
+						// 设置按钮的初始透明度
+						addButton.style.opacity = '0'
+						// 设置过渡效果为平滑过渡
+						addButton.style.transition = 'opacity 0.3s'
+
+						content.addEventListener('mousemove', (e) => {
+							// 获取父容器的边界
+							const rect = content.getBoundingClientRect()
+							// 计算鼠标指针相对于父容器的X位置
+							const mouseX = e.clientX - rect.left
+
+							// 检查鼠标指针是否在父容器右侧10px内
+							if (rect.width - mouseX <= 50) {
+								// 如果是，则显示按钮
+								addButton.style.opacity = '1'
+							} else {
+								// 如果不是，则隐藏按钮
+								addButton.style.opacity = '0'
+							}
+						})
+					}
+
+					if (this.settings.enableSvgButton) {
+						const svgButton = document.createElement('div')
+						svgButton.innerHTML = `<svg t="1711969204609" class="icon" viewBox="0 0 1137 1024" version="1.1" xmlns="http://www.w3.org/2000/svg" p-id="6546" width="17" height="17"><path d="M14.222222 512C14.222222 185.002667 321.251556 9.671111 658.944 47.104c271.473778 30.151111 464.611556 214.129778 464.611556 440.661333 0 120.035556-60.586667 172.828444-180.110223 205.198223-8.135111 2.218667-15.815111 4.152889-30.776889 7.964444-51.939556 13.368889-72.590222 22.243556-81.294222 34.702222-10.865778 15.530667-11.719111 26.567111-6.428444 60.814222 1.877333 12.174222 2.616889 17.464889 3.356444 24.803556 6.030222 63.374222-20.081778 111.160889-96.028444 154.453333-87.438222 49.948444-265.557333 24.120889-421.034667-55.523555C130.844444 827.847111 14.222222 683.463111 14.222222 512zM649.500444 131.982222C356.181333 99.328 99.555556 245.930667 99.555556 512c0 134.257778 95.971556 253.041778 250.538666 332.231111 132.494222 67.868444 283.249778 89.713778 339.854222 57.400889 47.445333-27.079111 56.149333-43.064889 53.361778-72.305778a322.56 322.56 0 0 0-2.673778-19.911111c-8.419556-54.158222-6.144-84.195556 20.878223-122.766222 25.031111-35.84 57.116444-49.607111 129.877333-68.323556 15.075556-3.868444 22.186667-5.688889 29.752889-7.736889 86.641778-23.438222 117.077333-49.948444 117.077333-122.88 0-179.768889-157.866667-330.126222-388.721778-355.783111zM241.777778 430.762667a71.111111 71.111111 0 1 1 0 142.222222 71.111111 71.111111 0 0 1 0-142.222222z m455.111111-170.666667a71.111111 71.111111 0 1 1 0 142.222222 71.111111 71.111111 0 0 1 0-142.222222z m-284.444445-4.096a71.111111 71.111111 0 1 1 0 142.222222 71.111111 71.111111 0 0 1 0-142.222222z" fill="#bfbfbf" p-id="6547"></path></svg>`
+						svgButton.style.position = 'absolute'
+						svgButton.style.right = '4px'
+						svgButton.style.bottom = '0'
+						content.style.position = 'relative'
+						content.appendChild(svgButton)
+
+						// 设置按钮的初始透明度
+						svgButton.style.opacity = '0'
+						// 设置过渡效果为平滑过渡
+						svgButton.style.transition = 'opacity 0.3s'
+
+						content.addEventListener('mousemove', (e) => {
+							// 获取父容器的边界
+							const rect = content.getBoundingClientRect()
+							// 计算鼠标指针相对于父容器的X位置
+							const mouseX = e.clientX - rect.left
+
+							// 检查鼠标指针是否在父容器右侧10px内
+							if (rect.width - mouseX <= 50) {
+								// 如果是，则显示按钮
+								svgButton.style.opacity = '1'
+							} else {
+								// 如果不是，则隐藏按钮
+								svgButton.style.opacity = '0'
+							}
+						})
+
+						// 鼠标离开父容器时隐藏按钮
+						content.addEventListener('mouseleave', () => {
+							svgButton.style.opacity = '0'
+						})
+
+						// Create the color menu but don't append it yet
+						const colorMenu = createColorMenu(colors, (selectedColor) => {
+							// console.log('Selected color:', selectedColor)
+							updateTitleCallback(columnId, index, selectedColor)
+						})
+
+						// Append and show/hide the menu on SVG icon click
+						svgButton.addEventListener('click', (e) => {
+							e.stopPropagation()
+							if (!colorMenu.isConnected) {
+								// If the menu isn't already in the DOM
+								content.appendChild(colorMenu) // Append the menu
+								colorMenu.style.display = 'block' // Make sure it's visible
+							} else {
+								colorMenu.style.display =
+									colorMenu.style.display === 'none' ? 'block' : 'none' // Toggle display
+							}
+						})
+
+						content.appendChild(colorMenu) // Initially add to DOM but hide
+						colorMenu.style.display = 'none' // Start hidden
 					}
 				})
+
+				function createColorMenu(colors, onSelect) {
+					const menu = document.createElement('div')
+					menu.style.position = 'absolute'
+					menu.style.right = '22.5px'
+					menu.style.bottom = '2.5px'
+					menu.style.backgroundColor = '#fff'
+					menu.style.border = '1px solid #ccc'
+					menu.style.paddingTop = '2.5px'
+					menu.style.paddingBottom = '2.5px'
+
+					menu.style.zIndex = '1000'
+					menu.style.borderRadius = '10px'
+
+					menu.style.transform = 'scale(0.65)' // Scale down to 80% of the original size
+					menu.style.transformOrigin = 'bottom right'
+					// Explicitly setting the container width; adjust as necessary.
+					menu.style.width = '250px' // Set a fixed width for the menu
+					menu.style.overflowX = 'auto' // Allow horizontal scrolling
+					menu.style.overflowY = 'hidden' // Prevent vertical scrolling
+					menu.style.whiteSpace = 'nowrap' // Keep items in a single line
+					menu.style.display = 'block' // Use block layout with nowrap to enforce horizontal layout
+
+					colors.forEach((color) => {
+						const colorOption = document.createElement('div')
+						colorOption.textContent = '11' // Display the color value or adjust as needed
+
+						colorOption.style.backgroundColor = color
+						colorOption.style.color = color // Ensuring text is readable
+						colorOption.style.fontSize = '15px'
+						colorOption.style.display = 'inline-block' // Inline-block for horizontal alignment
+						colorOption.style.padding = '0px 10px'
+						colorOption.style.borderRadius = '10px'
+						// colorOption.style.width = '15px'; // Optional: Adjust the width as needed
+						// colorOption.style.height = '15px'; // Optional: Adjust the width as needed
+
+						colorOption.style.margin = '2.5px' // Adds space between color options
+						colorOption.style.height = '30px' // Optional: Adjust the height as needed
+						colorOption.style.boxSizing = 'border-box' // Include padding and border in the element's total width and height
+						colorOption.addEventListener('click', () => onSelect(color))
+						menu.appendChild(colorOption)
+					})
+
+					return menu
+				}
 			}
 		}
 	)
@@ -1037,6 +1329,7 @@ var CalloutPlugin = class extends import_obsidian6.Plugin {
 			this,
 			this.updateTitle.bind(this),
 			this.addContent.bind(this),
+			this.updateChecklistItem.bind(this),
 			settings
 		)
 		this.registerEditorExtension(calloutEditorExt)
@@ -1171,12 +1464,16 @@ var CalloutPlugin = class extends import_obsidian6.Plugin {
 
 		for (let i = 0; i < numberOfColumns; i++) {
 			// 使用计算得到的columnWidth而不是直接除以numberOfColumns
-			columnsMarkup += `>> [!Note ${columnWidth}% left notitle grey]\n>> .\n>\n`
+			columnsMarkup += `>> [!Note | ${columnWidth}% notitle left grey]\n>> .\n>\n`
 		}
 
 		// 获取当前光标位置并插入文本
 		const cursorPos = editor.getCursor()
 		editor.replaceRange(columnsMarkup, cursorPos)
+	}
+
+	updateChecklistItem(id, line, isChecked) {
+		this.calloutEditor.updateChecklistItem(id, line, isChecked)
 	}
 
 	updateTitle(id, index, newTitle) {
@@ -1230,7 +1527,8 @@ var CalloutPlugin = class extends import_obsidian6.Plugin {
 		// 	console.log('contentWithNewlines:\n', contentWithNewlines);
 		// 	const rawContent = contentWithNewlines.split('\n')
 
-		const rawContent = calloutContent.innerHTML.split('\n')
+		let rawContent = calloutContent.innerHTML.split('\n')
+		rawContent.filter((line) => !line.trim().startsWith('<div style='))
 
 		// console.log('rawContent:\n', rawContent)
 		// console.log('content:\n', content)
@@ -1246,7 +1544,11 @@ var CalloutPlugin = class extends import_obsidian6.Plugin {
 		calloutEl.removeClass(onEditingMulti)
 		const calloutContent = calloutEl.querySelector('.callout-content')
 		const content = calloutContent.innerText.trim()
-		const rawContent = calloutContent.innerHTML.split('\n')
+		console.log('content', content)
+		let rawContent = calloutContent.innerHTML.split('\n')
+		rawContent = rawContent.filter(
+			(line) => !line.trim().startsWith('<div style=')
+		)
 
 		// console.log('rawContent:\n', rawContent)
 		// console.log('content:\n', content)

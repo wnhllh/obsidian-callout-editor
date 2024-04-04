@@ -166,7 +166,6 @@ function HTMLtoList0(rawContent) {
 }
 
 function HTMLtoList2(rawContent) {
-	console.log('raw', rawContent)
 	function processContent(item) {
 		// 解析为DOM结构
 		const doc = new DOMParser().parseFromString(
@@ -327,7 +326,6 @@ function HTMLtoList2(rawContent) {
 
 	const processedContent = processContentOptimized(rawContent)
 
-	console.log('process', processedContent)
 	// 根据 Note 进行分组
 	const groupedContent = []
 	let currentGroup = []
@@ -507,7 +505,6 @@ function HTMLtoList(rawContent) {
 			contentTemp = []
 		}
 	}
-	console.log('newList', newList)
 	return newList
 }
 
@@ -705,7 +702,7 @@ var CalloutEditor = class {
 	}
 
 	async updateChecklistItem(id, line, isChecked) {
-		console.log('updateChecklistItem', id, line, isChecked)
+		// console.log('updateChecklistItem', id, line, isChecked)
 
 		const markdownView = this.plugin.app.workspace.getActiveViewOfType(
 			import_obsidian.MarkdownView
@@ -852,7 +849,6 @@ var CalloutEditor = class {
 		}
 
 		const newList = HTMLtoList2(rawContent)
-		console.log('sasa', newList)
 
 		// replace callout with new content
 		var k = 0
@@ -1051,12 +1047,11 @@ var getCalloutEditorExt = (
 								target.matches('input[type="checkbox"].task-list-item-checkbox')
 							) {
 								// 在这里调用处理复选框点击的逻辑
-								console.log('Checklist item clicked in', columnContent)
+								// console.log('Checklist item clicked in', columnContent)
 								const dataLine = target.getAttribute('data-line')
 								let lineNumber = parseInt(dataLine, 10)
 								const isChecked = target.checked
 								lineNumber = lineNumber + columnLine
-								console.log('lineNumber', lineNumber)
 								updateChecklistCallback(columnId, lineNumber, isChecked)
 							} else {
 								columnEl.addClass(onEditingMulti)
@@ -1556,7 +1551,6 @@ var CalloutPlugin = class extends import_obsidian6.Plugin {
 		calloutEl.removeClass(onEditingMulti)
 		const calloutContent = calloutEl.querySelector('.callout-content')
 		const content = calloutContent.innerText.trim()
-		console.log('content', content)
 		let rawContent = calloutContent.innerHTML.split('\n')
 		rawContent = rawContent.filter(
 			(line) => !line.trim().startsWith('<div style=')

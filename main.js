@@ -925,12 +925,12 @@ var getCalloutEditorExt = (
 		class {
 			constructor(view) {
 				this.settings = settings
-				this.listenerMap = new WeakMap()
+				this.listenerMap = new Map()
 
 				this.setupEventListeners(view)
 			}
 			destroy(view) {
-				// this.removeEventListeners(view)
+				this.removeEventListeners()
 			}
 			update(update) {
 				if (plugin.isInReadingView()) return
@@ -1093,12 +1093,24 @@ var getCalloutEditorExt = (
 				})
 			}
 
-			removeEventListeners(view) {
-				const contentDOM = view.contentDOM
-				if (this.handleCheckboxClick) {
-					contentDOM.removeEventListener('click', this.handleCheckboxClick)
-				}
-			}
+			// removeEventListeners(view) {
+			// 	const contentDOM = view.contentDOM
+			// 	if (this.handleCheckboxClick) {
+			// 		contentDOM.removeEventListener('click', this.handleCheckboxClick)
+			// 	}
+			// }
+			removeEventListeners() {
+				// 遍历listenerMap中存储的每个元素及其监听器
+				this.listenerMap.forEach((handler, element) => {
+						// 对每个元素调用removeEventListener
+						// 这里假设添加的监听器类型是'click'
+						element.removeEventListener('click', handler);
+				});
+				
+				// 清空listenerMap，释放引用
+				this.listenerMap.clear();
+		}
+		
 
 			setupColumnEl(columnEl, view) {
 				const columnPos = view.posAtDOM(columnEl)

@@ -1,20 +1,20 @@
-/* .callout { */
-	/* background-color: transparent; */
-	/* padding: 5px; */
-/* } */
+.callout {
+	background-color: transparent;
+	padding: 5px;
+}
 
-/* .callout-content { */
+.callout-content {
 	/* border-radius: 5px; */
-/* 	padding-left: 15px;
+	padding-left: 15px;
 	padding-right: 15px;
 	padding-top: 0px;
 	padding-bottom: 0px;
-} */
+}
 
-/* .callout-title {
+.callout-title {
   padding-top: 10px;
   padding-left: 10px;
-} */
+}
 
 body {
 	--callout-min-width: 200px;

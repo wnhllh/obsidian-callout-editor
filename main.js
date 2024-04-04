@@ -248,7 +248,10 @@ function HTMLtoList2(rawContent) {
 
 	function processContentOptimized(htmlSegments) {
 		// 将所有HTML片段合并为一个字符串
-		const fullHtml = htmlSegments.join('')
+		// const fullHtml = htmlSegments.join('')
+		const fullHtml = htmlSegments
+			.map((segment) => (segment.endsWith('<br>') ? segment : segment + '<br>'))
+			.join('')
 
 		let filteredHtml = fullHtml.replace(
 			/<div style="[^"]*"[^>]*>[\s\S]*?<\/div>/g,
@@ -297,6 +300,15 @@ function HTMLtoList2(rawContent) {
 					.replace(/<li>(.*?)<\/li>/g, () => `${counter++}. $1\n`)
 					.trim()
 			})
+
+			.replace(
+				/<pre class="language-(\w+)" tabindex="\d+"><code class="language-\w+ is-loaded">(.*?)<\/code><button class="copy-code-button">[^<]*<\/button><\/pre>/g,
+				(match, lang, code) =>
+					`\`\`\`${lang}\n${code
+						.replace(/&lt;/g, '<')
+						.replace(/&gt;/g, '>')
+						.replace(/&amp;/g, '&')}\n\`\`\`\n`
+			)
 
 			.replace(/<br\s*\/?>/g, '\n')
 			.replace(/<[^>]+>/g, '')
@@ -740,7 +752,7 @@ var CalloutEditor = class {
 				setLineWithoutScroll(
 					editor,
 					lineNo,
-					currentTitle.replace(/\s+\S+$/, ' ' + newTitle + ']')
+					currentTitle.replace(/\s+[^\s\]]+](?=[^\]]*$)/, ' ' + newTitle + ']')
 				)
 			)
 		})

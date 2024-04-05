@@ -172,7 +172,6 @@ function HTMLtoList2(rawContent) {
 			`<div>${item}</div>`,
 			'text/html'
 		)
-
 		const processNode = (node) => {
 			if (node.nodeType === Node.ELEMENT_NODE) {
 				let content = ''
@@ -201,6 +200,19 @@ function HTMLtoList2(rawContent) {
 					case 'DEL':
 						content = `~~${processNode(node.firstChild)}~~`
 						break
+						case 'H1':
+							case 'H2':
+							case 'H3':
+							case 'H4':
+							case 'H5':
+							case 'H6':
+									// 提取标题级别数字（1至6）
+									const level = parseInt(node.tagName[1], 10);
+									// 根据标题级别构造Markdown标题前缀
+									const pre = "#".repeat(level);
+									// 处理标题内的内容，并添加前缀和换行符
+									content = `${pre} ${processNode(node.firstChild)}\n`;
+									break;
 					case 'BR':
 						return '\n'
 					// 其他标签处理，如UL, LI等，或直接遍历子节点
@@ -246,6 +258,7 @@ function HTMLtoList2(rawContent) {
 	}
 
 	function processContentOptimized(htmlSegments) {
+		console.log(htmlSegments)
 		// 将所有HTML片段合并为一个字符串
 		// const fullHtml = htmlSegments.join('')
 		const fullHtml = htmlSegments
@@ -259,6 +272,7 @@ function HTMLtoList2(rawContent) {
 
 		// 针对<div data-callout-metadata>元素及其全部内容的替换逻辑
 		let processedHtml = filteredHtml
+		.replace(/<\/p>\s*<p>/g, '<br>')
 			.replace(
 				/<div data-callout-metadata="[^"]*"[^>]*>([\s\S]*?)<\/div><\/div>/g,
 				'\n[PLACEABLE]\n'
@@ -267,6 +281,9 @@ function HTMLtoList2(rawContent) {
 			.replace(/<strong>(.*?)<\/strong>/g, '**$1**')
 			.replace(/<em>(.*?)<\/em>/g, '*$1*')
 			.replace(/<del>(.*?)<\/del>/g, '~~$1~~')
+			.replace(/<h(\d)[^>]*>(.*?)<\/h\1>/g, (match, level, content) => {
+        return `${'#'.repeat(parseInt(level, 10))} ${content.trim()}\n\n`;
+    })
 			.replace(
 				/<ul class="contains-task-list">([\s\S]*?)<\/ul>/g,
 				(match, listItems) => {
@@ -1414,18 +1431,18 @@ var CalloutPlugin = class extends import_obsidian6.Plugin {
 								'.' + onEditingMulti
 							)
 
-							if (!e.repeat && e.key === 'Enter' && !e.shiftKey) {
-								e.preventDefault() // 阻止默认的换段行为
-								const selection = window.getSelection()
-								const range = selection.getRangeAt(0)
-								const br = document.createElement('br')
-								range.insertNode(br) // 插入换行符
-								range.setStartAfter(br) // 将光标移动到换行符后
-								range.collapse(true) // 合并光标到范围的起点
-								selection.removeAllRanges()
-								selection.addRange(range) // 将新的范围添加到选区中
-								return
-							}
+							// if (!e.repeat && e.key === 'Enter' && !e.shiftKey) {
+							// 	e.preventDefault() // 阻止默认的换段行为
+							// 	const selection = window.getSelection()
+							// 	const range = selection.getRangeAt(0)
+							// 	const br = document.createElement('br')
+							// 	range.insertNode(br) // 插入换行符
+							// 	range.setStartAfter(br) // 将光标移动到换行符后
+							// 	range.collapse(true) // 合并光标到范围的起点
+							// 	selection.removeAllRanges()
+							// 	selection.addRange(range) // 将新的范围添加到选区中
+							// 	return
+							// }
 							if (!e.repeat && e.key == 'Shift' + 'Enter') {
 								return
 							}

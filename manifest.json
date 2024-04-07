@@ -1,7 +1,7 @@
 {
 	"id": "obsidian-callout-editor",
 	"name": "Callout Editor",
-	"version": "0.1.4",
+	"version": "1.0.0",
 	"minAppVersion": "1.5.12",
 	"description": "Enhance callout with WYSIWYG real-time editing, featuring quick color selection and creation of cascading card layouts.",
 	"author": "LLH",

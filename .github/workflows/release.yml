@@ -1,0 +1,46 @@
+name: Build and Release
+
+on:
+    pull_request:
+        branches:
+            - main
+    push:
+        tags:
+            - "*" # Push events to matching v*, i.e. v1.0, v20.15.10
+        branches:
+            - main
+        path-ignores:
+            - README*.md
+
+jobs:
+    build-and-test:
+        if: startsWith(github.ref, 'refs/tags/')
+        strategy:
+            matrix:
+                os: [ubuntu-latest]
+        runs-on: ${{ matrix.os }}
+        permissions:
+            contents: write
+        steps:
+            - uses: actions/checkout@v4
+              with:
+                fetch-depth: 0
+            - name: Get package version
+              run: |
+                node -p -e '`PLUGIN_ID=${require("./manifest.json").id}`' >> $GITHUB_ENV
+                node -p -e '`MANIFEST_VERSION=${require("./manifest.json").version}`' >> $GITHUB_ENV
+
+            - name: zip build
+              run: zip  ${{ env.PLUGIN_ID }}-${{ env.MANIFEST_VERSION }}.zip styles.css main.js manifest.json
+
+            - name: Create Release
+              uses: softprops/action-gh-release@v2
+              with:
+                  files: |
+                      styles.css
+                      main.js
+                      manifest.json
+                      ${{ env.PLUGIN_ID }}-${{ env.MANIFEST_VERSION }}.zip
+                  token: ${{ secrets.gh_token }}
+                  name: Release ${{ env.MANIFEST_VERSION }}
+                  make_latest: true

@@ -258,7 +258,6 @@ function HTMLtoList2(rawContent) {
 	}
 
 	function processContentOptimized(htmlSegments) {
-		console.log(htmlSegments)
 		// 将所有HTML片段合并为一个字符串
 		// const fullHtml = htmlSegments.join('')
 		const fullHtml = htmlSegments
@@ -1608,7 +1607,7 @@ var CalloutPlugin = class extends import_obsidian6.Plugin {
 	}
 
 	async loadCSS() {
-		const cssFilePath = this.manifest.dir + '/callout-custom.css'
+		const cssFilePath = this.manifest.dir + '/styles.css'
 		try {
 			const cssContent = await this.app.vault.adapter.read(cssFilePath)
 			const style = document.createElement('style')
